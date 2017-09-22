@@ -35,32 +35,32 @@ volatile int timing;
 
 void task1( void * parameter )
 {
-
+ client.publish("casa/dimmerEsp32/latidos/confirm", "modo latidos ON");
+ Serial.println(" modo latidos ON");    
  while(control){
- for (int fadeValue = 11 ; fadeValue < 40; fadeValue += 1) {
+ for (int fadeValue = 5 ; fadeValue < 25; fadeValue += 1) {
     // sets the value (range from 0 to 255):
      porcentaje= fadeValue;
     // wait for 30 milliseconds to see the dimming effect
-    delay(30);
+    delay(50);
   }
 
   // fade out from max to min in increments of 5 points:
-  for (int fadeValue = 40 ; fadeValue > 10; fadeValue -= 1) {
+  for (int fadeValue = 24 ; fadeValue > 5; fadeValue -= 1) {
      porcentaje= fadeValue;
-    delay(40);
-  }
-  
+    delay(50);
+  }  
  }
-    vTaskDelete( NULL );
+ client.publish("casa/dimmerEsp32/latidos/confirm", "modo latidos OFF");
+ Serial.println(" modo latidos OFF");
+ porcentaje=0;
+ vTaskDelete( NULL );
 }
-
-
 
 void IRAM_ATTR Dimmer(){
   timerStop(timer);
   digitalWrite(pin_controlDrimer,HIGH);
 }
-
 
 void setup() {
   
@@ -71,7 +71,6 @@ void setup() {
     delay(500);
     Serial.println("Connecting to WiFi..");
   }
- 
   Serial.println("Connected to the WiFi network");
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
@@ -165,13 +164,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
  if(topicStr == "casa/dimmerEsp32/latidos"){
-    // client.publish("casa/dimmerEsp32/latidos/confirm",(char*)dato.c_str());
-       control=true;
-        xTaskCreate( task1,"Task1",10000,NULL,1,NULL); 
-       Serial.println(" modo latidos");
-     
-  }
- 
-}
+
+     if(payload[0]=='1'){
+      control=true;
+      xTaskCreate( task1,"Task1",10000,NULL,1,NULL);
+      }else{
+         control=false;
+        }
+   }
+ }
 
 
