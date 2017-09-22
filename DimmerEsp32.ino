@@ -14,13 +14,13 @@
 #define MQTT_SERVER_WAN "giovanazzi.dyndns-free.com"
 
 ////////////////////////////////////
-const char* ssid = "Consola";
-const char* password =  "tyrrenal";
-const char* mqttServer = "giovanazzi.dynu.net";
+const char* ssid = "Red Virtual 2";
+const char* password =  "2410meridian";
+const char* mqttServer = "192.168.1.107";
 const int mqttPort = 1883;
 const char* mqttUser = "diego";
 const char* mqttPassword = "24305314";
-boolean control =true;
+static boolean control =false;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
