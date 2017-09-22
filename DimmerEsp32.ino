@@ -20,7 +20,7 @@ const char* mqttServer = "giovanazzi.dynu.net";
 const int mqttPort = 1883;
 const char* mqttUser = "diego";
 const char* mqttPassword = "24305314";
-boolean control =false;
+boolean control =true;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -88,6 +88,7 @@ void setup() {
   }
   client.publish("casa/dimmerEsp32/confirm", "Engancho");
   client.subscribe("casa/dimmerEsp32");
+  client.subscribe("casa/dimmerEsp32/latidos");
   
   //////////////////////////////////////////
  
@@ -159,23 +160,17 @@ void callback(char* topic, byte* payload, unsigned int length) {
  if(topicStr == "casa/dimmerEsp32"){
      control=false;
      client.publish("casa/dimmerEsp32/confirm",(char*)dato.c_str());
-
-       porcentaje=dato.toInt();
-       Serial.println(" El dato es: "+String(porcentaje));
-     
+     porcentaje=dato.toInt();
+     Serial.println(" El dato es: "+String(porcentaje));  
   }
 
  if(topicStr == "casa/dimmerEsp32/latidos"){
-
     // client.publish("casa/dimmerEsp32/latidos/confirm",(char*)dato.c_str());
        control=true;
         xTaskCreate( task1,"Task1",10000,NULL,1,NULL); 
        Serial.println(" modo latidos");
      
   }
-
- 
-
  
 }
 
