@@ -20,7 +20,8 @@ const char* mqttServer = "giovanazzi.dynu.net";
 const int mqttPort = 1883;
 const char* mqttUser = "diego";
 const char* mqttPassword = "24305314";
- 
+boolean control =false;
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -35,7 +36,7 @@ volatile int timing;
 void task1( void * parameter )
 {
 
- while(true){
+ while(control){
  for (int fadeValue = 11 ; fadeValue < 40; fadeValue += 1) {
     // sets the value (range from 0 to 255):
      porcentaje= fadeValue;
@@ -89,7 +90,7 @@ void setup() {
   client.subscribe("casa/dimmerEsp32");
   
   //////////////////////////////////////////
-  xTaskCreate( task1,"Task1",10000,NULL,1,NULL); 
+ 
   
   pinMode(pin_controlDrimer, OUTPUT);
   digitalWrite(pin_controlDrimer,LOW);
@@ -150,39 +151,32 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
   Serial.print("Message arrived in topic: ");
   Serial.println(topic);
- 
-  Serial.print("Message:");
   for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
      dato += (char)payload[i];
   }
  
  if(topicStr == "casa/dimmerEsp32"){
-
- client.publish("casa/dimmerEsp32/confirm",(char*)dato.c_str());
+     control=false;
+     client.publish("casa/dimmerEsp32/confirm",(char*)dato.c_str());
 
        porcentaje=dato.toInt();
        Serial.println(" El dato es: "+String(porcentaje));
      
   }
+
+ if(topicStr == "casa/dimmerEsp32/latidos"){
+
+    // client.publish("casa/dimmerEsp32/latidos/confirm",(char*)dato.c_str());
+       control=true;
+        xTaskCreate( task1,"Task1",10000,NULL,1,NULL); 
+       Serial.println(" modo latidos");
+     
+  }
+
+ 
+
+ 
 }
-
-/*
-// fade in from min to max in increments of 5 points:
-  for (int fadeValue = 0 ; fadeValue <= 255; fadeValue += 5) {
-    // sets the value (range from 0 to 255):
-    analogWrite(ledPin, fadeValue);
-    // wait for 30 milliseconds to see the dimming effect
-    delay(30);
-  }
-
-  // fade out from max to min in increments of 5 points:
-  for (int fadeValue = 255 ; fadeValue >= 0; fadeValue -= 5) {
-    // sets the value (range from 0 to 255):
-    analogWrite(ledPin, fadeValue);
-    // wait for 30 milliseconds to see the dimming effect
-    delay(30);
-  }
-*/
 
 
