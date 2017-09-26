@@ -3,9 +3,6 @@
 #include <String.h>
 #include <stdio.h>
 
-#define MQTT_SERVER_LAN "192.168.1.107"
-#define MQTT_SERVER_WAN "giovanazzi.dyndns-free.com"
-
 #define HOME "casa"
 #define ID "esp-03"
 #define SITE "living"
@@ -14,10 +11,20 @@
 #define MQTT_SERVER_WAN "giovanazzi.dyndns-free.com"
 
 ////////////////////////////////////
+const char* ssid_etb = "Consola";
+const char* password_etb =  "tyrrenal";
+const char* mqttServer_etb = "giovanazzi.dyndns-free.com";
+int mqttPort_etb = 8083;
+
+int intentos_con=0;
+boolean flag=true;
+
 const char* ssid = "Red Virtual 2";
 const char* password =  "2410meridian";
 const char* mqttServer = "192.168.1.107";
-const int mqttPort = 1883;
+
+
+int mqttPort = 1883;
 const char* mqttUser = "diego";
 const char* mqttPassword = "24305314";
 static boolean control =false;
@@ -67,11 +74,28 @@ void setup() {
   Serial.begin(115200);
   //////////////////  wifi mqtt 
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.println("Connecting to WiFi..");
-  }
+  
+  while ((WiFi.status() != WL_CONNECTED) && flag) {
+      delay(1000);
+     intentos_con ++;
+    
+      Serial.println("Connecting to WiFi .." + String(intentos_con));
+    
+     if (intentos_con==4){
+   //    flag=false
+        intentos_con=0;
+        ssid=ssid_etb;
+        password=password_etb;
+        mqttServer=mqttServer_etb;
+        mqttPort=mqttPort_etb;
+        WiFi.begin(ssid, password);
+         
+      }
+   }
+   
   Serial.println("Connected to the WiFi network");
+  Serial.println("mqttServer " + String(mqttServer));
+  Serial.println("mqttPort " + String(mqttPort));
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
   
