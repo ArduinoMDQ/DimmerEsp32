@@ -13,7 +13,7 @@
 ////////////////////////////////////
 const char* ssid_etb = "Consola";
 const char* password_etb =  "tyrrenal";
-const char* mqttServer_etb = "giovanazzi.dyndns-free.com";
+const char* mqttServer_etb = "giovanazzi.dynu.net";
 int mqttPort_etb = 8083;
 
 int intentos_con=0;
