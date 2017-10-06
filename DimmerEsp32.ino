@@ -8,7 +8,7 @@
 #define SITE "living"
 #define FLOOR "piso-0"
 #define DEPARTMENT "dto-0"
-#define MQTT_SERVER_WAN "giovanazzi.dyndns-free.com"
+#define MQTT_SERVER_WAN "giovanazzi.dynu.net"
 
 ////////////////////////////////////
 const char* ssid_etb = "Consola";
@@ -167,6 +167,7 @@ void controlPorcentaje(){
             timerRestart(timer);
         }
       }  
+
  }
 
 void callback(char* topic, byte* payload, unsigned int length) {
