@@ -45,7 +45,7 @@ void task1( void * parameter )
  client.publish("casa/dimmerEsp32/latidos/confirm", "modo latidos ON");
  Serial.println(" modo latidos ON");    
  while(control){
- for (int fadeValue = 5 ; fadeValue < 25; fadeValue += 1) {
+ for (int fadeValue = 4 ; fadeValue < 50; fadeValue += 1) {
     // sets the value (range from 0 to 255):
      porcentaje= fadeValue;
     // wait for 30 milliseconds to see the dimming effect
@@ -53,9 +53,9 @@ void task1( void * parameter )
   }
 
   // fade out from max to min in increments of 5 points:
-  for (int fadeValue = 24 ; fadeValue > 5; fadeValue -= 1) {
+  for (int fadeValue = 49 ; fadeValue > 4; fadeValue -= 1) {
      porcentaje= fadeValue;
-    delay(50);
+    delay(40);
   }  
  }
  client.publish("casa/dimmerEsp32/latidos/confirm", "modo latidos OFF");
@@ -146,7 +146,7 @@ void loop() {
 }
 
 void zeroCross(){
-
+ pin_controlDrimer,LOW
  noInterrupts();
  controlPorcentaje();
  interrupts();
@@ -154,10 +154,10 @@ void zeroCross(){
 
 void controlPorcentaje(){
 
-    if (porcentaje < 10){
+    if (porcentaje < 3){
         digitalWrite(pin_controlDrimer,LOW);
     }else{
-        if (porcentaje > 90){
+        if (porcentaje > 97){
             digitalWrite(pin_controlDrimer,HIGH);
         }else{
             digitalWrite(pin_controlDrimer,LOW);
