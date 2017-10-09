@@ -40,6 +40,13 @@ String inString="";
 volatile int porcentaje = 50;
 volatile int timing;
 
+//////RGB
+const int led_green=25;
+const int led_blue=26;
+const int led_red=27;
+/////////7
+
+
 void task1( void * parameter )
 {
  client.publish("casa/dimmerEsp32/latidos/confirm", "modo latidos ON");
@@ -112,12 +119,21 @@ void setup() {
   client.publish("casa/dimmerEsp32/confirm", "Engancho");
   client.subscribe("casa/dimmerEsp32");
   client.subscribe("casa/dimmerEsp32/latidos");
+  client.subscribe("casa/rgb");
   
   //////////////////////////////////////////
  
   
   pinMode(pin_controlDrimer, OUTPUT);
+  pinMode(led_green, OUTPUT);
+  pinMode(led_blue, OUTPUT);
+  pinMode(led_red, OUTPUT);
+  digitalWrite(led_green,HIGH);
+  digitalWrite(led_blue,HIGH);
+  digitalWrite(led_red,LOWHIGH);
+  
   digitalWrite(pin_controlDrimer,LOW);
+  
   pinMode(pin_zeroCross, INPUT);
   
   noInterrupts();
@@ -196,6 +212,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
       }else{
          control=false;
         }
+   }
+
+  if(topicStr == "casa/rgb"){
+    
+     Serial.println("RGB");    
    }
  }
 
