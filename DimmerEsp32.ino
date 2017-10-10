@@ -232,21 +232,48 @@ void callback(char* topic, byte* payload, unsigned int length) {
          control=false;
         }
    }
-
+/*
   if(topicStr == "casa/rgb"){
-    String dataSt = dato;
-    r = dataSt.substring(dataSt.indexOf('(')+1).toInt();
-    g = dataSt.substring(dataSt.indexOf(',')+1,dataSt.lastIndexOf(',')).toInt();
-    b = dataSt.substring(dataSt.lastIndexOf(',')+1).toInt();
-   Serial.println("red: "+String(r));
-   Serial.println("green: "+String(g));
-   Serial.println("blue: "+String(b));
+    */
 
-     ledcWrite(LEDC_CHANNEL_0, g);
-     ledcWrite(LEDC_CHANNEL_1, b);
-    ledcWrite(LEDC_CHANNEL_2, r);
+ if(topicStr == "casa/rgb/red"){
+    String dataSt = dato;
+    int color =dataSt.toInt();
+    
+   Serial.println("rojo: "+ dataSt);
+ 
+   //  ledcWrite(LEDC_CHANNEL_0, g);
+   //  ledcWrite(LEDC_CHANNEL_1, b);
+    ledcWrite(LEDC_CHANNEL_2,255 - color );
  
    }
+
+if(topicStr == "casa/rgb/green"){
+    String dataSt = dato;
+    int color =dataSt.toInt();
+    
+   Serial.println("verde: "+ dataSt);
+ 
+    ledcWrite(LEDC_CHANNEL_0, 255 - color);
+   //  ledcWrite(LEDC_CHANNEL_1, b);
+   // ledcWrite(LEDC_CHANNEL_2,255 - color );
+ 
+   }
+
+
+if(topicStr == "casa/rgb/blue"){
+   String dataSt = dato;
+   int color =dataSt.toInt();
+    
+   Serial.println("azul: "+ dataSt);
+ 
+   // ledcWrite(LEDC_CHANNEL_0, 255 - color);
+      ledcWrite(LEDC_CHANNEL_1, 255 - color);
+   // ledcWrite(LEDC_CHANNEL_2,255 - color );
+ 
+   }
+
+   
  }
 
 
