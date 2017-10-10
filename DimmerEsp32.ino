@@ -40,15 +40,33 @@ String inString="";
 volatile int porcentaje = 50;
 volatile int timing;
 
-//////RGB
+//////   *********   RGB    **************
 const int led_green=25;
 const int led_blue=26;
 const int led_red=27;
-/////////7
+
+#define BUFFER_SIZE 100
+
+int r = 0;
+int g = 0;
+int b = 0;
+
+// use first channel of 16 channels (started from zero)
+#define LEDC_CHANNEL_0     0
+#define LEDC_CHANNEL_1     1
+#define LEDC_CHANNEL_2     2
+// use 13 bit precission for LEDC timer
+#define LEDC_TIMER_8_BIT  8
+
+// use 5000 Hz as a LEDC base frequency
+#define LEDC_BASE_FREQ     5000
+
+int brightness = 0;    // how bright the LED is
 
 
-void task1( void * parameter )
-{
+/////////7 **********  FIN RGB ****************
+
+void task1( void * parameter ){
  client.publish("casa/dimmerEsp32/latidos/confirm", "modo latidos ON");
  Serial.println(" modo latidos ON");    
  while(control){
@@ -125,12 +143,13 @@ void setup() {
  
   
   pinMode(pin_controlDrimer, OUTPUT);
-  pinMode(led_green, OUTPUT);
-  pinMode(led_blue, OUTPUT);
-  pinMode(led_red, OUTPUT);
-  digitalWrite(led_green,HIGH);
-  digitalWrite(led_blue,HIGH);
-  digitalWrite(led_red,LOWHIGH);
+ 
+  ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
+  ledcSetup(LEDC_CHANNEL_1, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
+  ledcSetup(LEDC_CHANNEL_2, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
+  ledcAttachPin(led_green, LEDC_CHANNEL_0);
+  ledcAttachPin(led_blue, LEDC_CHANNEL_1);
+  ledcAttachPin(led_red, LEDC_CHANNEL_2);
   
   digitalWrite(pin_controlDrimer,LOW);
   
@@ -189,14 +208,14 @@ void controlPorcentaje(){
 void callback(char* topic, byte* payload, unsigned int length) {
   String topicStr = topic; 
   String dato ;
-  
+ 
   Serial.print("Message arrived in topic: ");
   Serial.println(topic);
   for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
      dato += (char)payload[i];
   }
- 
+  Serial.println();
  if(topicStr == "casa/dimmerEsp32"){
      control=false;
      client.publish("casa/dimmerEsp32/confirm",(char*)dato.c_str());
@@ -215,8 +234,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
    }
 
   if(topicStr == "casa/rgb"){
-    
-     Serial.println("RGB");    
+    String dataSt = dato;
+    r = dataSt.substring(dataSt.indexOf('(')+1).toInt();
+    g = dataSt.substring(dataSt.indexOf(',')+1,dataSt.lastIndexOf(',')).toInt();
+    b = dataSt.substring(dataSt.lastIndexOf(',')+1).toInt();
+   Serial.println("red: "+String(r));
+   Serial.println("green: "+String(g));
+   Serial.println("blue: "+String(b));
+
+     ledcWrite(LEDC_CHANNEL_0, g);
+     ledcWrite(LEDC_CHANNEL_1, b);
+    ledcWrite(LEDC_CHANNEL_2, r);
+ 
    }
  }
 
