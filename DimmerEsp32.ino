@@ -47,9 +47,6 @@ const int led_red=27;
 
 #define BUFFER_SIZE 100
 
-int r = 0;
-int g = 0;
-int b = 0;
 
 // use first channel of 16 channels (started from zero)
 #define LEDC_CHANNEL_0     0
@@ -121,6 +118,7 @@ void setup() {
   Serial.println("Connected to the WiFi network");
   Serial.println("mqttServer " + String(mqttServer));
   Serial.println("mqttPort " + String(mqttPort));
+  
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
   
@@ -137,16 +135,23 @@ void setup() {
   client.publish("casa/dimmerEsp32/confirm", "Engancho");
   client.subscribe("casa/dimmerEsp32");
   client.subscribe("casa/dimmerEsp32/latidos");
-  client.subscribe("casa/rgb");
+ // client.subscribe("casa/rgb");
+  client.subscribe("casa/rgb/red");
+  client.subscribe("casa/rgb/green");
+  client.subscribe("casa/rgb/blue");
   
   //////////////////////////////////////////
  
   
   pinMode(pin_controlDrimer, OUTPUT);
- 
+  pinMode(led_red, OUTPUT);
+  pinMode(led_green, OUTPUT);
+  pinMode(led_blue, OUTPUT);
+  
   ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
   ledcSetup(LEDC_CHANNEL_1, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
   ledcSetup(LEDC_CHANNEL_2, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
+  
   ledcAttachPin(led_green, LEDC_CHANNEL_0);
   ledcAttachPin(led_blue, LEDC_CHANNEL_1);
   ledcAttachPin(led_red, LEDC_CHANNEL_2);
@@ -211,19 +216,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
  
   Serial.print("Message arrived in topic: ");
   Serial.println(topic);
+  
   for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
-     dato += (char)payload[i];
+    dato += (char)payload[i];
   }
+  
   Serial.println();
- if(topicStr == "casa/dimmerEsp32"){
+  
+  if(topicStr == "casa/dimmerEsp32"){
      control=false;
      client.publish("casa/dimmerEsp32/confirm",(char*)dato.c_str());
      porcentaje=dato.toInt();
      Serial.println(" El dato es: "+String(porcentaje));  
   }
 
- if(topicStr == "casa/dimmerEsp32/latidos"){
+  if(topicStr == "casa/dimmerEsp32/latidos"){
 
      if(payload[0]=='1'){
       control=true;
@@ -232,48 +240,48 @@ void callback(char* topic, byte* payload, unsigned int length) {
          control=false;
         }
    }
-/*
-  if(topicStr == "casa/rgb"){
-    */
 
- if(topicStr == "casa/rgb/red"){
+  if(topicStr == "casa/rgb/red"){
     String dataSt = dato;
     int color =dataSt.toInt();
     
-   Serial.println("rojo: "+ dataSt);
- 
-   //  ledcWrite(LEDC_CHANNEL_0, g);
-   //  ledcWrite(LEDC_CHANNEL_1, b);
-    ledcWrite(LEDC_CHANNEL_2,255 - color );
- 
+    Serial.println("rojo: "+ dataSt);
+    
+    if(color<255){
+        ledcWrite(LEDC_CHANNEL_2,255 - color );
+    }else{
+      digitalWrite(led_red,true);
+      
+      }
+    
    }
 
-if(topicStr == "casa/rgb/green"){
+  if(topicStr == "casa/rgb/green"){
     String dataSt = dato;
     int color =dataSt.toInt();
     
-   Serial.println("verde: "+ dataSt);
- 
-    ledcWrite(LEDC_CHANNEL_0, 255 - color);
-   //  ledcWrite(LEDC_CHANNEL_1, b);
-   // ledcWrite(LEDC_CHANNEL_2,255 - color );
- 
-   }
-
-
-if(topicStr == "casa/rgb/blue"){
+    Serial.println("verde: "+ dataSt);
+     if(color<255){
+        ledcWrite(LEDC_CHANNEL_0, 255 - color);
+     }else{
+        digitalWrite(led_green,true);
+     
+      }
+     }
+  
+  
+  if(topicStr == "casa/rgb/blue"){
    String dataSt = dato;
    int color =dataSt.toInt();
-    
-   Serial.println("azul: "+ dataSt);
- 
-   // ledcWrite(LEDC_CHANNEL_0, 255 - color);
-      ledcWrite(LEDC_CHANNEL_1, 255 - color);
-   // ledcWrite(LEDC_CHANNEL_2,255 - color );
- 
-   }
-
    
+   Serial.println("azul: "+ dataSt);
+   if(color<255){
+      ledcWrite(LEDC_CHANNEL_1, 255 - color);
+   }else{
+     digitalWrite(led_blue,true);
+    }
+ }
+      
  }
 
 
