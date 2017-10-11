@@ -194,9 +194,9 @@ void zeroCross(){
 
 void controlPorcentaje(){
 
-    if (porcentaje < 3){
+  if (porcentaje < 3){
         digitalWrite(pin_controlDrimer,LOW);
-    }else{
+  }else{
         if (porcentaje > 97){
             digitalWrite(pin_controlDrimer,HIGH);
         }else{
@@ -206,7 +206,7 @@ void controlPorcentaje(){
             timerAlarmEnable(timer);
             timerRestart(timer);
         }
-      }  
+  }  
 
  }
 
@@ -246,41 +246,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
     int color =dataSt.toInt();
     
     Serial.println("rojo: "+ dataSt);
-    
-    if(color<255){
-        ledcWrite(LEDC_CHANNEL_2,255 - color );
-    }else{
-      digitalWrite(led_red,true);
-      
-      }
-    
+    ledcWrite(LEDC_CHANNEL_2,color );
    }
 
   if(topicStr == "casa/rgb/green"){
     String dataSt = dato;
     int color =dataSt.toInt();
-    
     Serial.println("verde: "+ dataSt);
-     if(color<255){
-        ledcWrite(LEDC_CHANNEL_0, 255 - color);
-     }else{
-        digitalWrite(led_green,true);
-     
-      }
-     }
-  
-  
+    ledcWrite(LEDC_CHANNEL_0, color);
+  }
+   
   if(topicStr == "casa/rgb/blue"){
    String dataSt = dato;
    int color =dataSt.toInt();
-   
    Serial.println("azul: "+ dataSt);
-   if(color<255){
-      ledcWrite(LEDC_CHANNEL_1, 255 - color);
-   }else{
-     digitalWrite(led_blue,true);
-    }
- }
+   ledcWrite(LEDC_CHANNEL_1,  color);
+  }
       
  }
 
