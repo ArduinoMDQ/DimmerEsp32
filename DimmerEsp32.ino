@@ -61,7 +61,6 @@ static boolean control_RGB =false;
 
 int brightness = 0;    // how bright the LED is
 
-
 /////////7 **********  FIN RGB ****************
 
 void task1( void * parameter ){
@@ -86,7 +85,6 @@ void task1( void * parameter ){
  porcentaje=0;
  vTaskDelete( NULL );
 }
-
 
 void task_RGB( void * parameter ){
  
