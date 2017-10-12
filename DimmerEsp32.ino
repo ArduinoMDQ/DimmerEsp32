@@ -44,14 +44,15 @@ volatile int timing;
 const int led_green=25;
 const int led_blue=26;
 const int led_red=27;
+static boolean control_RGB =false;
 
 #define BUFFER_SIZE 100
 
 
 // use first channel of 16 channels (started from zero)
-#define LEDC_CHANNEL_0     0
-#define LEDC_CHANNEL_1     1
-#define LEDC_CHANNEL_2     2
+#define LEDC_CHANNEL_0     0 //verde
+#define LEDC_CHANNEL_1     1 // azul
+#define LEDC_CHANNEL_2     2 // rojo
 // use 13 bit precission for LEDC timer
 #define LEDC_TIMER_8_BIT  8
 
@@ -85,6 +86,52 @@ void task1( void * parameter ){
  porcentaje=0;
  vTaskDelete( NULL );
 }
+
+
+void task_RGB( void * parameter ){
+ 
+ while(control_RGB){
+  
+  for (int fadeValue = 0 ; fadeValue < 255; fadeValue += 1) {
+    // sets the value (range from 0 to 255):
+      ledcWrite(LEDC_CHANNEL_0, fadeValue);//verde
+    // wait for 30 milliseconds to see the dimming effect
+     delay(10);
+  }
+  // fade out from max to min in increments of 5 points:
+  for (int fadeValue = 255 ; fadeValue > 0; fadeValue -= 1) {
+     ledcWrite(LEDC_CHANNEL_0, fadeValue);//verde
+     delay(10);
+  }  
+   
+  for (int fadeValue = 0 ; fadeValue < 255; fadeValue += 1) {
+    // sets the value (range from 0 to 255):
+      ledcWrite(LEDC_CHANNEL_1, fadeValue);//verde
+    // wait for 30 milliseconds to see the dimming effect
+    delay(10);
+  }
+  // fade out from max to min in increments of 5 points:
+  for (int fadeValue = 255 ; fadeValue > 0; fadeValue -= 1) {
+     ledcWrite(LEDC_CHANNEL_1, fadeValue);//verde
+     delay(10);
+  }  
+    
+  for (int fadeValue = 0 ; fadeValue < 255; fadeValue += 1) {
+    // sets the value (range from 0 to 255):
+      ledcWrite(LEDC_CHANNEL_2, fadeValue);//verde
+    // wait for 30 milliseconds to see the dimming effect
+    delay(10);
+  }
+  // fade out from max to min in increments of 5 points:
+  for (int fadeValue = 255 ; fadeValue > 0; fadeValue -= 1) {
+     ledcWrite(LEDC_CHANNEL_2, fadeValue);//verde
+    delay(10);
+  }  
+ }
+ 
+ vTaskDelete( NULL );
+}
+
 
 void IRAM_ATTR Dimmer(){
   timerStop(timer);
@@ -132,25 +179,25 @@ void setup() {
       delay(1000);
      }
   }
+  
   client.publish("casa/dimmerEsp32/confirm", "Engancho");
   client.subscribe("casa/dimmerEsp32");
   client.subscribe("casa/dimmerEsp32/latidos");
- // client.subscribe("casa/rgb");
   client.subscribe("casa/rgb/red");
   client.subscribe("casa/rgb/green");
   client.subscribe("casa/rgb/blue");
+  client.subscribe("casa/rgb/secuencia");
   
   //////////////////////////////////////////
- 
-  
+   
   pinMode(pin_controlDrimer, OUTPUT);
   pinMode(led_red, OUTPUT);
   pinMode(led_green, OUTPUT);
   pinMode(led_blue, OUTPUT);
   
-  ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
-  ledcSetup(LEDC_CHANNEL_1, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
-  ledcSetup(LEDC_CHANNEL_2, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);
+  ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);// verde
+  ledcSetup(LEDC_CHANNEL_1, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);// azul
+  ledcSetup(LEDC_CHANNEL_2, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);// rojo
   
   ledcAttachPin(led_green, LEDC_CHANNEL_0);
   ledcAttachPin(led_blue, LEDC_CHANNEL_1);
@@ -262,7 +309,36 @@ void callback(char* topic, byte* payload, unsigned int length) {
    Serial.println("azul: "+ dataSt);
    ledcWrite(LEDC_CHANNEL_1,  color);
   }
+
+  if(topicStr == "casa/rgb/secuencia"){
+   String dataSt = dato;
+   int secuencia =dataSt.toInt();
+   Serial.println("secuencia: "+ dataSt);
+/*
+   switch(secuencia){
+
+    case 1 :Serial.println("case 1");
+            break;
+    case 2 :Serial.println("case 2");
+            break;
+    case 3 :Serial.println("case 3");
+            break;
+    case 4 :Serial.println("case 4");
+            break;
+    default :break;
+    
+    }*/
+   if(payload[0]=='1'){
+      control_RGB=true;
+      xTaskCreate( task_RGB,"RGB",10000,NULL,1,NULL);
+      }
+    if(payload[0]=='0'){
+      control_RGB=false;
+      ledcWrite(LEDC_CHANNEL_0, 0);//verde
+      ledcWrite(LEDC_CHANNEL_1, 0);//verde
+      ledcWrite(LEDC_CHANNEL_2, 0);//verde
+     }
+  }
       
  }
-
 
