@@ -45,6 +45,7 @@ const int led_green=25;
 const int led_blue=26;
 const int led_red=27;
 static boolean control_RGB =false;
+static int velocidad = 20;
 
 #define BUFFER_SIZE 100
 
@@ -86,50 +87,118 @@ void task1( void * parameter ){
  vTaskDelete( NULL );
 }
 
-void task_RGB( void * parameter ){
+void task_RGB_1( void * parameter ){
  
  while(control_RGB){
   
   for (int fadeValue = 0 ; fadeValue < 255; fadeValue += 1) {
     // sets the value (range from 0 to 255):
       ledcWrite(LEDC_CHANNEL_0, fadeValue);//verde
+      if(control_RGB==false){
+        break;
+        }
     // wait for 30 milliseconds to see the dimming effect
-     delay(10);
+     delay(velocidad);
   }
   // fade out from max to min in increments of 5 points:
   for (int fadeValue = 255 ; fadeValue > 0; fadeValue -= 1) {
      ledcWrite(LEDC_CHANNEL_0, fadeValue);//verde
-     delay(10);
+      if(control_RGB==false){
+        break;
+        }
+     delay(velocidad);
   }  
    
   for (int fadeValue = 0 ; fadeValue < 255; fadeValue += 1) {
     // sets the value (range from 0 to 255):
       ledcWrite(LEDC_CHANNEL_1, fadeValue);//verde
     // wait for 30 milliseconds to see the dimming effect
-    delay(10);
+     if(control_RGB==false){
+        break;
+        }
+    delay(velocidad);
   }
   // fade out from max to min in increments of 5 points:
   for (int fadeValue = 255 ; fadeValue > 0; fadeValue -= 1) {
      ledcWrite(LEDC_CHANNEL_1, fadeValue);//verde
-     delay(10);
+      if(control_RGB==false){
+        break;
+        }
+     delay(velocidad);
   }  
     
   for (int fadeValue = 0 ; fadeValue < 255; fadeValue += 1) {
     // sets the value (range from 0 to 255):
       ledcWrite(LEDC_CHANNEL_2, fadeValue);//verde
     // wait for 30 milliseconds to see the dimming effect
-    delay(10);
+     if(control_RGB==false){
+        break;
+        }
+    delay(velocidad);
   }
   // fade out from max to min in increments of 5 points:
   for (int fadeValue = 255 ; fadeValue > 0; fadeValue -= 1) {
      ledcWrite(LEDC_CHANNEL_2, fadeValue);//verde
-    delay(10);
+      if(control_RGB==false){
+        break;
+        }
+    delay(velocidad);
   }  
  }
  
  vTaskDelete( NULL );
 }
 
+void task_RGB_2( void * parameter ){
+ 
+ while(control_RGB){
+  
+  for (int fadeValue = 0 ; fadeValue < 255; fadeValue += 1) {
+    // sets the value (range from 0 to 255):
+      ledcWrite(LEDC_CHANNEL_0, fadeValue);//verde
+      if(control_RGB==false){
+        break;
+        }
+    // wait for 30 milliseconds to see the dimming effect
+     delay(velocidad);
+  }
+  // fade out from max to min in increments of 5 points:
+  for (int fadeValue = 255 ; fadeValue > 0; fadeValue -= 1) {
+     ledcWrite(LEDC_CHANNEL_0, fadeValue);//verde
+      if(control_RGB==false){
+        break;
+        }
+     delay(velocidad);
+  }  
+   
+  
+ }
+ 
+ vTaskDelete( NULL );
+}
+
+void task_RGB_3( void * parameter ){
+ 
+ while(control_RGB){
+  
+    ledcWrite(LEDC_CHANNEL_0, 255);//verde
+    ledcWrite(LEDC_CHANNEL_1, 255);//azul
+    ledcWrite(LEDC_CHANNEL_2, 255);//rojo
+
+    delay(velocidad*10);
+     if(control_RGB==false){
+        break;
+        }
+    ledcWrite(LEDC_CHANNEL_0, 0);//verde
+    ledcWrite(LEDC_CHANNEL_1, 0);//azul
+    ledcWrite(LEDC_CHANNEL_2, 0);//rojo
+
+
+    
+ }
+ vTaskDelete( NULL );
+
+}
 
 void IRAM_ATTR Dimmer(){
   timerStop(timer);
@@ -185,6 +254,7 @@ void setup() {
   client.subscribe("casa/rgb/green");
   client.subscribe("casa/rgb/blue");
   client.subscribe("casa/rgb/secuencia");
+   client.subscribe("casa/rgb/velocidad");
   
   //////////////////////////////////////////
    
@@ -308,34 +378,37 @@ void callback(char* topic, byte* payload, unsigned int length) {
    ledcWrite(LEDC_CHANNEL_1,  color);
   }
 
+   if(topicStr == "casa/rgb/velocidad"){
+   String dataSt = dato;
+   int vel =dataSt.toInt();
+   Serial.println("velocidad: "+ dataSt);
+   velocidad= vel;
+  }
+
   if(topicStr == "casa/rgb/secuencia"){
    String dataSt = dato;
    int secuencia =dataSt.toInt();
    Serial.println("secuencia: "+ dataSt);
-/*
-   switch(secuencia){
 
-    case 1 :Serial.println("case 1");
-            break;
-    case 2 :Serial.println("case 2");
-            break;
-    case 3 :Serial.println("case 3");
-            break;
-    case 4 :Serial.println("case 4");
-            break;
-    default :break;
-    
-    }*/
+   if(payload[0]=='0'){
+      control_RGB=false;
+    }
    if(payload[0]=='1'){
       control_RGB=true;
-      xTaskCreate( task_RGB,"RGB",10000,NULL,1,NULL);
+      xTaskCreate( task_RGB_1,"RGB",10000,NULL,1,NULL);
       }
-    if(payload[0]=='0'){
-      control_RGB=false;
-      ledcWrite(LEDC_CHANNEL_0, 0);//verde
-      ledcWrite(LEDC_CHANNEL_1, 0);//verde
-      ledcWrite(LEDC_CHANNEL_2, 0);//verde
-     }
+    if(payload[0]=='2'){
+      control_RGB=true;
+      xTaskCreate( task_RGB_2,"RGB",10000,NULL,1,NULL);
+      }
+     if(payload[0]=='3'){
+      control_RGB=true;
+      xTaskCreate( task_RGB_3,"RGB",10000,NULL,1,NULL);
+      }
+   
+
+
+    
   }
       
  }
