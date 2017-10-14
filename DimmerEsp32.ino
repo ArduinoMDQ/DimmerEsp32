@@ -144,6 +144,10 @@ void task_RGB_1( void * parameter ){
         }
     delay(velocidad);
   }  
+ 
+  if(control_RGB==false){
+        break;
+        }
  }
  
  vTaskDelete( NULL );
@@ -151,49 +155,28 @@ void task_RGB_1( void * parameter ){
 
 void task_RGB_2( void * parameter ){
  
- while(control_RGB){
-  
-  for (int fadeValue = 0 ; fadeValue < 255; fadeValue += 1) {
-    // sets the value (range from 0 to 255):
-      ledcWrite(LEDC_CHANNEL_0, fadeValue);//verde
-      if(control_RGB==false){
-        break;
-        }
-    // wait for 30 milliseconds to see the dimming effect
-     delay(velocidad);
-  }
-  // fade out from max to min in increments of 5 points:
-  for (int fadeValue = 255 ; fadeValue > 0; fadeValue -= 1) {
-     ledcWrite(LEDC_CHANNEL_0, fadeValue);//verde
-      if(control_RGB==false){
-        break;
-        }
-     delay(velocidad);
-  }  
-   
-  
- }
- 
  vTaskDelete( NULL );
 }
 
 void task_RGB_3( void * parameter ){
  
  while(control_RGB){
-  
-    ledcWrite(LEDC_CHANNEL_0, 255);//verde
-    ledcWrite(LEDC_CHANNEL_1, 255);//azul
-    ledcWrite(LEDC_CHANNEL_2, 255);//rojo
+    Serial.println("prende");
+    ledcWrite(LEDC_CHANNEL_0, 240);//verde
+    ledcWrite(LEDC_CHANNEL_1, 240);//azul
+    ledcWrite(LEDC_CHANNEL_2, 240);//rojo
 
     delay(velocidad*10);
      if(control_RGB==false){
         break;
         }
+
+     Serial.println(" y apaga");
     ledcWrite(LEDC_CHANNEL_0, 0);//verde
     ledcWrite(LEDC_CHANNEL_1, 0);//azul
     ledcWrite(LEDC_CHANNEL_2, 0);//rojo
 
-
+delay(velocidad*10);
     
  }
  vTaskDelete( NULL );
@@ -392,6 +375,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
    if(payload[0]=='0'){
       control_RGB=false;
+    
     }
    if(payload[0]=='1'){
       control_RGB=true;
