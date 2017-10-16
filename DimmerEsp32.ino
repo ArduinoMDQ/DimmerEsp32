@@ -2,6 +2,9 @@
 #include <PubSubClient.h>
 #include <String.h>
 #include <stdio.h>
+#include <driver/gpio.h>
+#include <driver/adc.h>
+
 
 #define HOME "casa"
 #define ID "esp-03"
@@ -40,6 +43,42 @@ String inString="";
 volatile int porcentaje = 50;
 volatile int timing;
 
+
+/////////////******* LED TOUCH /////////
+
+/*Touch Sensor Pin Layout
+   T0 = GPIO4
+   T1 = GPIO0
+   T2 = GPIO2
+   T3 = GPIO15
+   T4 = GPIO13
+   T5 = GPIO12
+   T6 = GPIO14
+   T7 = GPIO27
+   T8 = GPIO33
+   T9 = GPIO32 */
+   
+int ledTouch = 2;
+int SensorTactil=32;//T9
+
+int buff(int pin)                                       //Function to handle the touch raw sensor data
+{
+
+  int out = (40 - touchRead(pin))*2;                         //  Scale by n, value very sensitive currently
+  // change to adjust sensitivity as required
+  if (out > 0 )
+  {
+    return (out + 2);
+  }
+  else
+  {
+    return 0;                                        //Else, return 0
+  }
+
+}
+/////////*****  FIN LED TUCH
+
+
 //////   *********   RGB    **************
 const int led_green=25;
 const int led_blue=26;
@@ -47,6 +86,9 @@ const int led_red=27;
 static boolean control_RGB =false;
 static int velocidad = 20;
 
+const int analogPin = 35;  // Analog input pin 
+int sensorValue = 0;        // value read from the adc
+#define ADC1_TEST_CHANNEL (7)
 #define BUFFER_SIZE 100
 
 
@@ -54,6 +96,7 @@ static int velocidad = 20;
 #define LEDC_CHANNEL_0     0 //verde
 #define LEDC_CHANNEL_1     1 // azul
 #define LEDC_CHANNEL_2     2 // rojo
+#define LEDC_CHANNEL_3     3 // redBuilIn= 2
 // use 13 bit precission for LEDC timer
 #define LEDC_TIMER_8_BIT  8
 
@@ -183,6 +226,34 @@ delay(velocidad*10);
 
 }
 
+void task_ADC( void * parameter ){
+
+  while(1){
+
+     delay(100);
+    
+     sensorValue = analogRead(analogPin);
+     String valor =String(sensorValue);
+     Serial.println("ADC: "+ valor);
+     client.publish("casa/adc", (char*)valor.c_str());
+    }
+  
+  }
+
+void task_TOUCH( void * parameter ){
+
+  while(1){
+     float cuenta = (255*buff(T8))/50;
+     delay(100);
+     Serial.println((int)cuenta);
+     
+     
+     ledcWrite(LEDC_CHANNEL_3, (buff(T8)));                 // Using T0 for touch data
+    
+    }
+  
+  }
+
 void IRAM_ATTR Dimmer(){
   timerStop(timer);
   digitalWrite(pin_controlDrimer,HIGH);
@@ -237,7 +308,7 @@ void setup() {
   client.subscribe("casa/rgb/green");
   client.subscribe("casa/rgb/blue");
   client.subscribe("casa/rgb/secuencia");
-   client.subscribe("casa/rgb/velocidad");
+  client.subscribe("casa/rgb/velocidad");
   
   //////////////////////////////////////////
    
@@ -245,6 +316,14 @@ void setup() {
   pinMode(led_red, OUTPUT);
   pinMode(led_green, OUTPUT);
   pinMode(led_blue, OUTPUT);
+  pinMode(ledTouch, OUTPUT);
+
+  ledcAttachPin(ledTouch, LEDC_CHANNEL_3);                                                    //Configure variable led, pin 18 to channel 1
+  ledcSetup(LEDC_CHANNEL_3, 5000, 8);                                                  // 5 kHz PWM and 8 bit resolution
+  
+  ledcWrite(LEDC_CHANNEL_3, 255);     
+  delay(1000);
+  ledcWrite(LEDC_CHANNEL_3, 0); 
   
   ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);// verde
   ledcSetup(LEDC_CHANNEL_1, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);// azul
@@ -253,7 +332,12 @@ void setup() {
   ledcAttachPin(led_green, LEDC_CHANNEL_0);
   ledcAttachPin(led_blue, LEDC_CHANNEL_1);
   ledcAttachPin(led_red, LEDC_CHANNEL_2);
+
+ // adc1_config_width(ADC_WIDTH_12Bit);
+ // adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_6db);
   
+  xTaskCreate( task_ADC,"ADC",1000,NULL,1,NULL);
+  xTaskCreate( task_TOUCH,"TOUCH",1000,NULL,1,NULL);
   digitalWrite(pin_controlDrimer,LOW);
   
   pinMode(pin_zeroCross, INPUT);
@@ -266,7 +350,7 @@ void setup() {
 }
 
 void loop() {
-  
+ 
   client.loop();
   
   while (Serial.available() > 0) {
@@ -361,7 +445,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
    ledcWrite(LEDC_CHANNEL_1,  color);
   }
 
-   if(topicStr == "casa/rgb/velocidad"){
+  if(topicStr == "casa/rgb/velocidad"){
    String dataSt = dato;
    int vel =dataSt.toInt();
    Serial.println("velocidad: "+ dataSt);
@@ -377,11 +461,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
       control_RGB=false;
     
     }
+  
    if(payload[0]=='1'){
       control_RGB=true;
       xTaskCreate( task_RGB_1,"RGB",10000,NULL,1,NULL);
       }
-    if(payload[0]=='2'){
+   
+   if(payload[0]=='2'){
       control_RGB=true;
       xTaskCreate( task_RGB_2,"RGB",10000,NULL,1,NULL);
       }
