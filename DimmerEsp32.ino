@@ -18,7 +18,7 @@ const char* ssid_etb = "Consola";
 const char* password_etb =  "tyrrenal";
 const char* mqttServer_etb = "giovanazzi.dynu.net";
 int mqttPort_etb = 8083;
-
+int pulsos=0;
 int intentos_con=0;
 boolean flag=true;
 
@@ -42,6 +42,23 @@ const int pin_zeroCross = 12;
 String inString="";
 volatile int porcentaje = 50;
 volatile int timing;
+/// declaracion **********  ACS*****////////
+/*
+Measuring AC Current Using ACS712
+*/
+const int sensorIn = A0;
+double mVperAmp = 37.0;//185.0; // use 100 for 20A****66 for 30A **** 185 for 5A
+double Voltage = 0;
+double VRMS = 0;
+double AmpsRMS = 0;
+////////////////////////////////
+
+
+
+////******** FIN ACS712////////
+
+
+
 
 
 /////////////******* LED TOUCH /////////
@@ -57,14 +74,13 @@ volatile int timing;
    T7 = GPIO27
    T8 = GPIO33
    T9 = GPIO32 */
-   
+ /*  
 int ledTouch = 2;
 int SensorTactil=32;//T9
 
-int buff(int pin)                                       //Function to handle the touch raw sensor data
-{
+int buff(int pin){
 
-  int out = (40 - touchRead(pin))*2;                         //  Scale by n, value very sensitive currently
+  int out = (40 - touchRead(pin));                         //  Scale by n, value very sensitive currently
   // change to adjust sensitivity as required
   if (out > 0 )
   {
@@ -75,6 +91,14 @@ int buff(int pin)                                       //Function to handle the
     return 0;                                        //Else, return 0
   }
 
+}
+*/
+int threshold = 3;
+bool touch1detected = false;
+
+void gotTouch1(){
+ touch1detected = true;
+ 
 }
 /////////*****  FIN LED TUCH
 
@@ -204,7 +228,7 @@ void task_RGB_2( void * parameter ){
 void task_RGB_3( void * parameter ){
  
  while(control_RGB){
-    Serial.println("prende");
+    
     ledcWrite(LEDC_CHANNEL_0, 240);//verde
     ledcWrite(LEDC_CHANNEL_1, 240);//azul
     ledcWrite(LEDC_CHANNEL_2, 240);//rojo
@@ -214,12 +238,11 @@ void task_RGB_3( void * parameter ){
         break;
         }
 
-     Serial.println(" y apaga");
     ledcWrite(LEDC_CHANNEL_0, 0);//verde
     ledcWrite(LEDC_CHANNEL_1, 0);//azul
     ledcWrite(LEDC_CHANNEL_2, 0);//rojo
 
-delay(velocidad*10);
+    delay(velocidad*10);
     
  }
  vTaskDelete( NULL );
@@ -230,26 +253,12 @@ void task_ADC( void * parameter ){
 
   while(1){
 
-     delay(100);
+     delay(1000);
     
      sensorValue = analogRead(analogPin);
      String valor =String(sensorValue);
      Serial.println("ADC: "+ valor);
      client.publish("casa/adc", (char*)valor.c_str());
-    }
-  
-  }
-
-void task_TOUCH( void * parameter ){
-
-  while(1){
-     float cuenta = (255*buff(T8))/50;
-     delay(100);
-     Serial.println((int)cuenta);
-     
-     
-     ledcWrite(LEDC_CHANNEL_3, (buff(T8)));                 // Using T0 for touch data
-    
     }
   
   }
@@ -262,7 +271,6 @@ void IRAM_ATTR Dimmer(){
 void setup() {
   
   Serial.begin(115200);
-  //////////////////  wifi mqtt 
   WiFi.begin(ssid, password);
   
   while ((WiFi.status() != WL_CONNECTED) && flag) {
@@ -316,15 +324,7 @@ void setup() {
   pinMode(led_red, OUTPUT);
   pinMode(led_green, OUTPUT);
   pinMode(led_blue, OUTPUT);
-  pinMode(ledTouch, OUTPUT);
 
-  ledcAttachPin(ledTouch, LEDC_CHANNEL_3);                                                    //Configure variable led, pin 18 to channel 1
-  ledcSetup(LEDC_CHANNEL_3, 5000, 8);                                                  // 5 kHz PWM and 8 bit resolution
-  
-  ledcWrite(LEDC_CHANNEL_3, 255);     
-  delay(1000);
-  ledcWrite(LEDC_CHANNEL_3, 0); 
-  
   ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);// verde
   ledcSetup(LEDC_CHANNEL_1, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);// azul
   ledcSetup(LEDC_CHANNEL_2, LEDC_BASE_FREQ, LEDC_TIMER_8_BIT);// rojo
@@ -333,11 +333,10 @@ void setup() {
   ledcAttachPin(led_blue, LEDC_CHANNEL_1);
   ledcAttachPin(led_red, LEDC_CHANNEL_2);
 
- // adc1_config_width(ADC_WIDTH_12Bit);
- // adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_6db);
-  
   xTaskCreate( task_ADC,"ADC",1000,NULL,1,NULL);
-  xTaskCreate( task_TOUCH,"TOUCH",1000,NULL,1,NULL);
+  
+  touchAttachInterrupt(T8, gotTouch1, threshold);
+ 
   digitalWrite(pin_controlDrimer,LOW);
   
   pinMode(pin_zeroCross, INPUT);
@@ -350,7 +349,12 @@ void setup() {
 }
 
 void loop() {
- 
+  if(touch1detected){
+    touch1detected = false;
+    pulsos++;
+    Serial.println("Tactil detectado: "+String(pulsos));
+    
+  }
   client.loop();
   
   while (Serial.available() > 0) {
@@ -417,7 +421,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
      if(payload[0]=='1'){
       control=true;
-      xTaskCreate( task1,"Task1",10000,NULL,1,NULL);
+      xTaskCreate( task1,"Task1",1000,NULL,2,NULL);
       }else{
          control=false;
         }
@@ -464,16 +468,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
    if(payload[0]=='1'){
       control_RGB=true;
-      xTaskCreate( task_RGB_1,"RGB",10000,NULL,1,NULL);
+      xTaskCreate( task_RGB_1,"RGB",1000,NULL,2,NULL);
       }
    
    if(payload[0]=='2'){
       control_RGB=true;
-      xTaskCreate( task_RGB_2,"RGB",10000,NULL,1,NULL);
+      xTaskCreate( task_RGB_2,"RGB",1000,NULL,2,NULL);
       }
      if(payload[0]=='3'){
       control_RGB=true;
-      xTaskCreate( task_RGB_3,"RGB",10000,NULL,1,NULL);
+      xTaskCreate( task_RGB_3,"RGB",1000,NULL,2,NULL);
       }
    
 
