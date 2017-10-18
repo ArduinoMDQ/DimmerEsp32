@@ -47,19 +47,13 @@ volatile int timing;
 Measuring AC Current Using ACS712
 */
 const int sensorIn = A0;
-double mVperAmp = 37.0;//185.0; // use 100 for 20A****66 for 30A **** 185 for 5A
+double mVperAmp = 185.0;//185.0; // use 100 for 20A****66 for 30A **** 185 for 5A
 double Voltage = 0;
 double VRMS = 0;
 double AmpsRMS = 0;
-////////////////////////////////
-
-
+int muestrasPromedio=0;
 
 ////******** FIN ACS712////////
-
-
-
-
 
 /////////////******* LED TOUCH /////////
 
@@ -250,18 +244,32 @@ void task_RGB_3( void * parameter ){
 }
 
 void task_ADC( void * parameter ){
-
-  while(1){
-
-     delay(1000);
-    
-     sensorValue = analogRead(analogPin);
-     String valor =String(sensorValue);
-     Serial.println("ADC: "+ valor);
-     client.publish("casa/adc", (char*)valor.c_str());
-    }
   
+  while(1){
+    // Serial.println("valor medio " + String(analogRead(analogPin)));
+    delay(500) ;
+
+  /*  float valor = analogRead(analogPin)*(3.3 /4095.0);
+   Serial.println(" muestras" + String(analogRead(analogPin)));
+   Serial.println(" tension " + String(valor));
+  */
+    float valor = TrueRMSMuestras();
+   
+    AmpsRMS=(valor*1000.0)/mVperAmp -.02;
+
+    
+    
+    if(AmpsRMS<0.015){   AmpsRMS=0;}  
+    
+    String Potencia = String(220*AmpsRMS);
+    String Corriente = String(AmpsRMS);
+    Serial.print("AmpsRMS RMS: "); Serial.println(AmpsRMS,3);
+    Serial.println("POWER RMS: " + String(Potencia));
+    client.publish("casa/adc/potencia", (char*)Potencia.c_str());
+    client.publish("casa/adc/corriente", (char*)Corriente.c_str());
+    
   }
+}
 
 void IRAM_ATTR Dimmer(){
   timerStop(timer);
@@ -486,4 +494,36 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
       
  }
+
+float TrueRMSMuestras(){
+  
+  float result =0,conv=0,Acumulador=0,suma=0;
+ int readValue =0;             //value read from the sensor
+ int Count =0;
+ float promedio =0;
+ int sumatoria =0;
+ const int n = 40;
+ 
+
+  for(int i=0;i<n;i++){
+    delay(1);
+    sumatoria = sumatoria + analogRead(analogPin);
+  } 
+  promedio=sumatoria/n;
+  Serial.println("Promedio "+ String(n)+" muestras:"+String(promedio));
+
+ uint32_t start_time = millis();
+   
+  while((millis()-start_time )< 80){   
+     Count++;
+     readValue =  analogRead(analogPin);
+     conv=((readValue - promedio)*3.3)/4095.0;
+     Acumulador=Acumulador+sq(conv);  
+     }
+   suma=Acumulador/Count;
+   result=sqrt(suma);
+
+   Serial.println(readValue - promedio);
+   return result;
+  }
 
