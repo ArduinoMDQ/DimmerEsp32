@@ -52,9 +52,10 @@ double Voltage = 0;
 double VRMS = 0;
 double AmpsRMS = 0;
 int muestrasPromedio=0;
-const double vEsc = 3.3/4096.0 ;
+const double nUmb = 4096.0;
+const double vEsc = 3.3/nUmb ;
 const float minUmbral =0.020;
-const float correccion =0.020;
+const float correccion =0.025;
 ////******** FIN ACS712////////
 
 /////////////******* LED TOUCH /////////
@@ -250,7 +251,7 @@ void task_ADC( void * parameter ){
   while(1){
     // Serial.println("valor medio " + String(analogRead(analogPin)));
     Serial.println("****************************************");
-    Serial.print("Valor Escalon 3.3 / 4096.0 : ");Serial.println(vEsc,8);
+    Serial.print("Valor Escalon 3.3/");Serial.print(nUmb,1);Serial.print(":");Serial.println(vEsc,8);
     float valor = TrueRMSMuestras();
     AmpsRMS=valor/mVperAmp - correccion;
     Serial.print("AmpsRMS medido: "); Serial.println(AmpsRMS,3);
@@ -491,8 +492,9 @@ float TrueRMSMuestras(){
   
   double result =0,conv=0,Acumulador=0,suma=0;
  int readValue =0;             //value read from the sensor
- int Count =0;
+  int Count =0;
  double promedio =0;
+ double promedioRead =0;
  int sumatoria =0;
  const int n = 320;
  int diferencia =0;
@@ -506,15 +508,18 @@ float TrueRMSMuestras(){
  Vo=promedio*vEsc;
  Serial.println("Tension Promedio : "+String(Vo));
  uint32_t start_time = millis();
- while((millis()-start_time )< 320){   
+ while((millis()-start_time )< 40){   
+ //    while(Count< 320){
+  
      Count++;
      readValue =  analogRead(analogPin);
-    
+     promedioRead=promedioRead + readValue;
      conv=(readValue - promedio)*vEsc;
      Acumulador=Acumulador+sq(conv);  
      }
    suma=Acumulador/Count;
    result=sqrt(suma);
+    Serial.print("Count: "+String(Count)+"Muestras");
    Serial.println(String(n)+" Muestras Promedio : "+String(promedio));
   return result;
   }
