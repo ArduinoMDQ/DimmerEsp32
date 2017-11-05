@@ -52,10 +52,10 @@ double Voltage = 0;
 double VRMS = 0;
 double AmpsRMS = 0;
 int muestrasPromedio=0;
-const double nUmb = 4096.0;
+const double nUmb = 4095.0;
 const double vEsc = 3.3/nUmb ;
-const float minUmbral =0.020;
-const float correccion =0.025;
+const float minUmbral =0.04; // por debajo de 40mA se considera ruido.
+const float correccion =0.90;/// el sistema siene un error por demas del 10%-... cn esto lo corrijo
 ////******** FIN ACS712////////
 
 /////////////******* LED TOUCH /////////
@@ -253,17 +253,16 @@ void task_ADC( void * parameter ){
     Serial.println("****************************************");
     Serial.print("Valor Escalon 3.3/");Serial.print(nUmb,1);Serial.print(":");Serial.println(vEsc,8);
     float valor = TrueRMSMuestras();
-    AmpsRMS=valor/mVperAmp - correccion;
+    AmpsRMS = (valor/mVperAmp)*correccion;
     Serial.print("AmpsRMS medido: "); Serial.println(AmpsRMS,3);
     if(AmpsRMS < minUmbral){  AmpsRMS=0;}  
     String Potencia = String(220*AmpsRMS);
-    String Corriente = String(AmpsRMS);
+    String Corriente = String(AmpsRMS,3);
     Serial.print("AmpsRMS RMS: "); Serial.println(AmpsRMS,3);
     Serial.println("POWER RMS: " + String(Potencia));
     client.publish("casa/adc/potencia", (char*)Potencia.c_str());
     client.publish("casa/adc/corriente", (char*)Corriente.c_str());
-    //vTaskDelay(3000/portTICK_PERIOD_MS);
-    delay(3000);
+    delay(5000);
   }
 }
 
@@ -490,37 +489,48 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 float TrueRMSMuestras(){
   
-  double result =0,conv=0,Acumulador=0,suma=0;
+ float result =0,conv=0,Acumulador=0,suma=0;
  int readValue =0;             //value read from the sensor
-  int Count =0;
- double promedio =0;
- double promedioRead =0;
+ int Count =0;
+ int promedio =0;
+ float promedioRead =0;
  int sumatoria =0;
- const int n = 320;
- int diferencia =0;
- double Vo =0;
- for(int i=0;i<n;i++){
-    //vTaskDelay(1/portTICK_PERIOD_MS);
-    delay(1);
-    sumatoria = sumatoria + analogRead(analogPin);
-  } 
- promedio=sumatoria/n;
- Vo=promedio*vEsc;
- Serial.println("Tension Promedio : "+String(Vo));
+ const int n = 200;
+ const int mseg = 40;
+ //int diferencia =0;
+ float Vo =0;
  uint32_t start_time = millis();
- while((millis()-start_time )< 40){   
- //    while(Count< 320){
-  
+ 
+ while( (millis()- start_time) < mseg){  
+     sumatoria = sumatoria + analogRead(analogPin);
+     Count++;
+ } 
+ 
+ promedio=(int)(sumatoria/Count);
+ Serial.print("***** Muestars promedio**********");
+ Serial.print("sumatoria: "); Serial.println(sumatoria);
+ Serial.print("Count: "); Serial.println(Count);
+ Serial.print("promedio: "); Serial.println(promedio);
+ Vo=promedio*vEsc;
+ Serial.print("Vo : "); Serial.println(Vo,3);
+ 
+ start_time = millis();
+ Count = 0;
+ 
+ while(( millis()- start_time) < mseg){     
      Count++;
      readValue =  analogRead(analogPin);
-     promedioRead=promedioRead + readValue;
-     conv=(readValue - promedio)*vEsc;
-     Acumulador=Acumulador+sq(conv);  
+     conv=(readValue - promedio)*vEsc;// 2.25;//2793= 2.25v 
+     Acumulador = Acumulador+sq(conv);  
+    
      }
-   suma=Acumulador/Count;
-   result=sqrt(suma);
-    Serial.print("Count: "+String(Count)+"Muestras");
-   Serial.println(String(n)+" Muestras Promedio : "+String(promedio));
-  return result;
+ suma=Acumulador/Count;
+ Serial.print("Acumulador: ");Serial.println(Acumulador,3);
+ Serial.print("Count: ");Serial.println(Count);
+ result=sqrt(suma);
+ Serial.print("analogRead(analogPin): "); Serial.println(analogRead(analogPin));
+ Serial.println(String(n)+" Muestras Promedio : "+String(promedio));
+ return result;
+ 
   }
 
