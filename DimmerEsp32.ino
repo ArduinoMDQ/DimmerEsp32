@@ -495,8 +495,8 @@ float TrueRMSMuestras(){
  int promedio =0;
  float promedioRead =0;
  int sumatoria =0;
- const int n = 200;
- const int mseg = 40;
+ //const int n = 200;
+ const int mseg = 400;
  //int diferencia =0;
  float Vo =0;
  uint32_t start_time = millis();
@@ -529,7 +529,7 @@ float TrueRMSMuestras(){
  Serial.print("Count: ");Serial.println(Count);
  result=sqrt(suma);
  Serial.print("analogRead(analogPin): "); Serial.println(analogRead(analogPin));
- Serial.println(String(n)+" Muestras Promedio : "+String(promedio));
+// Serial.println(String(n)+" Muestras Promedio : "+String(promedio));
  return result;
  
   }
