@@ -54,8 +54,9 @@ double AmpsRMS = 0;
 int muestrasPromedio=0;
 const double nUmb = 4095.0;
 const double vEsc = 3.3/nUmb ;
-const float minUmbral =0.04; // por debajo de 40mA se considera ruido.
+const float minUmbral =0.05; // por debajo de 40mA se considera ruido.
 const float correccion =0.90;/// el sistema siene un error por demas del 10%-... cn esto lo corrijo
+const int segundos = 5;
 ////******** FIN ACS712////////
 
 /////////////******* LED TOUCH /////////
@@ -249,20 +250,17 @@ void task_RGB_3( void * parameter ){
 void task_ADC( void * parameter ){
   
   while(1){
-    // Serial.println("valor medio " + String(analogRead(analogPin)));
-    Serial.println("****************************************");
-    Serial.print("Valor Escalon 3.3/");Serial.print(nUmb,1);Serial.print(":");Serial.println(vEsc,8);
     float valor = TrueRMSMuestras();
     AmpsRMS = (valor/mVperAmp)*correccion;
-    Serial.print("AmpsRMS medido: "); Serial.println(AmpsRMS,3);
     if(AmpsRMS < minUmbral){  AmpsRMS=0;}  
     String Potencia = String(220*AmpsRMS);
     String Corriente = String(AmpsRMS,3);
     Serial.print("AmpsRMS RMS: "); Serial.println(AmpsRMS,3);
     Serial.println("POWER RMS: " + String(Potencia));
+    Serial.println();
     client.publish("casa/adc/potencia", (char*)Potencia.c_str());
     client.publish("casa/adc/corriente", (char*)Corriente.c_str());
-    delay(5000);
+    delay(1000*segundos);
   }
 }
 
@@ -496,7 +494,7 @@ float TrueRMSMuestras(){
  float promedioRead =0;
  int sumatoria =0;
  //const int n = 200;
- const int mseg = 400;
+ const int mseg = 800;
  //int diferencia =0;
  float Vo =0;
  uint32_t start_time = millis();
@@ -507,10 +505,8 @@ float TrueRMSMuestras(){
  } 
  
  promedio=(int)(sumatoria/Count);
- Serial.print("***** Muestars promedio**********");
- Serial.print("sumatoria: "); Serial.println(sumatoria);
- Serial.print("Count: "); Serial.println(Count);
- Serial.print("promedio: "); Serial.println(promedio);
+ Serial.println();
+ Serial.print("Ventana de Tiempo : "); Serial.print(mseg);Serial.println(" mseg.");
  Vo=promedio*vEsc;
  Serial.print("Vo : "); Serial.println(Vo,3);
  
@@ -525,11 +521,7 @@ float TrueRMSMuestras(){
     
      }
  suma=Acumulador/Count;
- Serial.print("Acumulador: ");Serial.println(Acumulador,3);
- Serial.print("Count: ");Serial.println(Count);
  result=sqrt(suma);
- Serial.print("analogRead(analogPin): "); Serial.println(analogRead(analogPin));
-// Serial.println(String(n)+" Muestras Promedio : "+String(promedio));
  return result;
  
   }
