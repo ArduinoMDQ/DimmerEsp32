@@ -56,7 +56,7 @@ const double nUmb = 4095.0;
 const double vEsc = 3.3/nUmb ;
 const float minUmbral =0.05; // por debajo de 40mA se considera ruido.
 const float correccion =0.90;/// el sistema siene un error por demas del 10%-... cn esto lo corrijo
-const int segundos = 5;
+const int segundos = 2;
 ////******** FIN ACS712////////
 
 /////////////******* LED TOUCH /////////
@@ -357,7 +357,11 @@ void loop() {
     
   }
   client.loop();
-  
+  while (!client.connected()) {
+      if (WiFi.status() != WL_CONNECTED) {
+        ESP.restart();
+      }
+  }
   while (Serial.available() > 0) {
     porcentaje=0;
      int inChar = Serial.read();
@@ -494,7 +498,7 @@ float TrueRMSMuestras(){
  float promedioRead =0;
  int sumatoria =0;
  //const int n = 200;
- const int mseg = 800;
+ const int mseg = 400;
  //int diferencia =0;
  float Vo =0;
  uint32_t start_time = millis();
