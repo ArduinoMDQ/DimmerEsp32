@@ -13,6 +13,9 @@
 #define DEPARTMENT "dto-0"
 #define MQTT_SERVER_WAN "giovanazzi.dynu.net"
 
+
+#define LED 2
+
 ////////////////////////////////////
 const char* ssid_etb = "Consola";
 const char* password_etb =  "tyrrenal";
@@ -250,6 +253,7 @@ void task_RGB_3( void * parameter ){
 void task_ADC( void * parameter ){
   
   while(1){
+   
     float valor = TrueRMSMuestras();
     AmpsRMS = (valor/mVperAmp)*correccion;
     if(AmpsRMS < minUmbral){  AmpsRMS=0;}  
@@ -276,6 +280,7 @@ void IRAM_ATTR Dimmer(){
 void setup() {
   
   Serial.begin(115200);
+  pinMode(LED, OUTPUT);
   WiFi.begin(ssid, password);
   
   while ((WiFi.status() != WL_CONNECTED) && flag) {
@@ -505,6 +510,7 @@ float TrueRMSMuestras(){
  float Vo =0;
  uint32_t start_time = millis();
  
+ digitalWrite(LED,HIGH);
  while( (millis()- start_time) < mseg){  
      sumatoria = sumatoria + analogRead(analogPin);
      Count++;
@@ -528,6 +534,7 @@ float TrueRMSMuestras(){
      }
  suma=Acumulador/Count;
  result=sqrt(suma);
+  digitalWrite(LED,LOW);
  return result;
  
   }
