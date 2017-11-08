@@ -255,9 +255,13 @@ void task_ADC( void * parameter ){
     if(AmpsRMS < minUmbral){  AmpsRMS=0;}  
     String Potencia = String(220*AmpsRMS);
     String Corriente = String(AmpsRMS,3);
-    Serial.print("AmpsRMS RMS: "); Serial.println(AmpsRMS,3);
-    Serial.println("POWER RMS: " + String(Potencia));
     Serial.println();
+    int minuto = millis()/60000;
+    int hora = millis()/3600000;
+    
+    Serial.print(hora);Serial.print(":");Serial.print(minuto - hora*60);Serial.print(":");Serial.println((millis()/1000)-minuto*60);
+    Serial.print("Corriente : "); Serial.println(AmpsRMS,3);
+    Serial.println("Potencia : " + String(Potencia));
     client.publish("casa/adc/potencia", (char*)Potencia.c_str());
     client.publish("casa/adc/corriente", (char*)Corriente.c_str());
     delay(1000*segundos);
@@ -497,9 +501,7 @@ float TrueRMSMuestras(){
  int promedio =0;
  float promedioRead =0;
  int sumatoria =0;
- //const int n = 200;
- const int mseg = 400;
- //int diferencia =0;
+ const int mseg = 800;
  float Vo =0;
  uint32_t start_time = millis();
  
@@ -509,10 +511,10 @@ float TrueRMSMuestras(){
  } 
  
  promedio=(int)(sumatoria/Count);
- Serial.println();
- Serial.print("Ventana de Tiempo : "); Serial.print(mseg);Serial.println(" mseg.");
+ /*Serial.println();
+ Serial.print("Ventana de Tiempo : "); Serial.print(mseg);Serial.println(" mseg.");*/
  Vo=promedio*vEsc;
- Serial.print("Vo : "); Serial.println(Vo,3);
+ /*Serial.print("Vo : "); Serial.println(Vo,3);*/
  
  start_time = millis();
  Count = 0;
