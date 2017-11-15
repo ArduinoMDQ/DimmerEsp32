@@ -288,6 +288,9 @@ void task_ADC( void * parameter ){
     
     Serial.print("Corriente Yhdc 30A/1V : "); Serial.println(AmpsRMS,3);
     Serial.println("Potencia Yhdc 30A/1V : " + String(Potencia));
+
+    client.publish("casa/adc/potenciaTotal", (char*)Potencia.c_str());
+    client.publish("casa/adc/corrienteTotal", (char*)Corriente.c_str());
         
     delay(1000*segundos);
     
