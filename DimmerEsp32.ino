@@ -16,6 +16,10 @@
 
 #define LED 2
 
+#include "EmonLib.h"                   // Include Emon Library
+EnergyMonitor emon1;                   // Create an instance
+const float factorCorrecEmon = 7;
+
 ////////////////////////////////////
 const char* ssid_etb = "Consola";
 const char* password_etb =  "tyrrenal";
@@ -51,6 +55,7 @@ Measuring AC Current Using ACS712
 */
 //const int sensorIn = A0;
 double mVperAmp = 0.185;//185.0; // use 100 for 20A****66 for 30A **** 185 for 5A
+double mVperAmpYhdc = 0.033333333333;// sct 30A/1V
 double Voltage = 0;
 double VRMS = 0;
 double AmpsRMS = 0;
@@ -59,7 +64,7 @@ const double nUmb = 4095.0;
 const double vEsc = 3.3/nUmb ;
 const float minUmbral =0.05; // por debajo de 40mA se considera ruido.
 const float correccion =0.90;/// el sistema siene un error por demas del 10%-... cn esto lo corrijo
-const int segundos = 2;
+const int segundos = 4;
 ////******** FIN ACS712////////
 
 /////////////******* LED TOUCH /////////
@@ -112,6 +117,7 @@ static boolean control_RGB =false;
 static int velocidad = 20;
 
 const int analogPin = 35;  // Analog input pin 
+const int analogPinEmon = 34;  // Analog input pin
 int sensorValue = 0;        // value read from the adc
 #define ADC1_TEST_CHANNEL (7)
 #define BUFFER_SIZE 100
@@ -253,8 +259,10 @@ void task_RGB_3( void * parameter ){
 void task_ADC( void * parameter ){
   
   while(1){
+ 
    
-    float valor = TrueRMSMuestras();
+    float valor = TrueRMSMuestras(analogPin);
+    
     AmpsRMS = (valor/mVperAmp)*correccion;
     if(AmpsRMS < minUmbral){  AmpsRMS=0;}  
     String Potencia = String(220*AmpsRMS);
@@ -268,7 +276,31 @@ void task_ADC( void * parameter ){
     Serial.println("Potencia : " + String(Potencia));
     client.publish("casa/adc/potencia", (char*)Potencia.c_str());
     client.publish("casa/adc/corriente", (char*)Corriente.c_str());
+
+    ///////////   emong
+    valor = TrueRMSMuestras(analogPinEmon);
+    
+    AmpsRMS = (valor/mVperAmpYhdc)*.9;
+    //if(AmpsRMS < minUmbral){  AmpsRMS=0;}  
+    Potencia = String(220*AmpsRMS);
+    Corriente = String(AmpsRMS,3);
+    Serial.println();
+    
+    Serial.print("Corriente Yhdc 30A/1V : "); Serial.println(AmpsRMS,3);
+    Serial.println("Potencia Yhdc 30A/1V : " + String(Potencia));
+        
     delay(1000*segundos);
+    
+   /* double Irms = emon1.calcIrms(1480);  // Calculate Irms only
+    
+    Serial.println("**** EMONLIB ****");          // Irms
+    Serial.print("Irms*220.0 : "); Serial.print(Irms*220.0);         // Apparent power
+    Serial.print(" Irms : ");
+    Serial.println(Irms);          // Irms
+    Serial.println("**** fin EMONLIB ****");
+
+*/   
+
   }
 }
 
@@ -356,9 +388,15 @@ void setup() {
   timerAttachInterrupt(timer, &Dimmer, true);
   attachInterrupt(digitalPinToInterrupt(pin_zeroCross),zeroCross,RISING );
   interrupts(); 
+
+ 
+  //emon1.current(analogPinEmon, factorCorrecEmon);             // Current: input pin, calibration.
+
+  
 }
 
 void loop() {
+  
   if(touch1detected){
     touch1detected = false;
     pulsos++;
@@ -498,7 +536,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
       
  }
 
-float TrueRMSMuestras(){
+float TrueRMSMuestras(int pin){
   
  float result =0,conv=0,Acumulador=0,suma=0;
  int readValue =0;             //value read from the sensor
@@ -512,7 +550,7 @@ float TrueRMSMuestras(){
  
  digitalWrite(LED,HIGH);
  while( (millis()- start_time) < mseg){  
-     sumatoria = sumatoria + analogRead(analogPin);
+     sumatoria = sumatoria + analogRead(pin);
      Count++;
  } 
  
@@ -527,7 +565,7 @@ float TrueRMSMuestras(){
  
  while(( millis()- start_time) < mseg){     
      Count++;
-     readValue =  analogRead(analogPin);
+     readValue =  analogRead(pin);
      conv=(readValue - promedio)*vEsc;// 2.25;//2793= 2.25v 
      Acumulador = Acumulador+sq(conv);  
     
