@@ -18,7 +18,7 @@
 
 #include "EmonLib.h"                   // Include Emon Library
 EnergyMonitor emon1;                   // Create an instance
-const float factorCorrecEmon = 7;
+const float factorCorrecEmon = 8.18;
 
 ////////////////////////////////////
 const char* ssid_etb = "Consola";
@@ -64,7 +64,7 @@ const double nUmb = 4095.0;
 const double vEsc = 3.3/nUmb ;
 const float minUmbral =0.05; // por debajo de 40mA se considera ruido.
 const float correccion =0.90;/// el sistema siene un error por demas del 10%-... cn esto lo corrijo
-const int segundos = 4;
+const int segundos = 2;
 ////******** FIN ACS712////////
 
 /////////////******* LED TOUCH /////////
@@ -277,29 +277,12 @@ void task_ADC( void * parameter ){
     client.publish("casa/adc/potencia", (char*)Potencia.c_str());
     client.publish("casa/adc/corriente", (char*)Corriente.c_str());
 
-    ///////////   emong
-    valor = TrueRMSMuestras(analogPinEmon);
-    
-    AmpsRMS = (valor/mVperAmpYhdc)*.9;
-    //if(AmpsRMS < minUmbral){  AmpsRMS=0;}  
-    Potencia = String(220*AmpsRMS);
-    Corriente = String(AmpsRMS,3);
-    Serial.println();
-    
-    Serial.print("Corriente Yhdc 30A/1V : "); Serial.println(AmpsRMS,3);
-    Serial.println("Potencia Yhdc 30A/1V : " + String(Potencia));
-        
-    delay(1000*segundos);
-    
-   /* double Irms = emon1.calcIrms(1480);  // Calculate Irms only
-    
-    Serial.println("**** EMONLIB ****");          // Irms
-    Serial.print("Irms*220.0 : "); Serial.print(Irms*220.0);         // Apparent power
-    Serial.print(" Irms : ");
-    Serial.println(Irms);          // Irms
-    Serial.println("**** fin EMONLIB ****");
 
-*/   
+
+     float Irms30A = PromedioEmon(34);
+    Serial.print("Irms30Acia : ");Serial.println(Irms30A,3);
+    delay(1000*segundos);
+   
 
   }
 }
@@ -389,8 +372,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(pin_zeroCross),zeroCross,RISING );
   interrupts(); 
 
- 
-  //emon1.current(analogPinEmon, factorCorrecEmon);             // Current: input pin, calibration.
+ analogReadResolution(12);
+  emon1.current(analogPinEmon,factorCorrecEmon );             // Current: input pin, calibration.
 
   
 }
@@ -544,7 +527,7 @@ float TrueRMSMuestras(int pin){
  int promedio =0;
  float promedioRead =0;
  int sumatoria =0;
- const int mseg = 800;
+ const int mseg = 400;
  float Vo =0;
  uint32_t start_time = millis();
  
@@ -560,7 +543,7 @@ float TrueRMSMuestras(int pin){
  Vo=promedio*vEsc;
  /*Serial.print("Vo : "); Serial.println(Vo,3);*/
  
- start_time = millis();
+   start_time = millis();
  Count = 0;
  
  while(( millis()- start_time) < mseg){     
@@ -573,6 +556,21 @@ float TrueRMSMuestras(int pin){
  suma=Acumulador/Count;
  result=sqrt(suma);
   digitalWrite(LED,LOW);
+ return result;
+ 
+  }
+
+float PromedioEmon(int pin){
+  int Count = 0;
+  double Irms = 0;
+  float result=0;
+  uint32_t start_time = millis();
+   const int mseg = 400;
+ while(( millis()- start_time) < mseg){     
+     Count++;
+      Irms = Irms + emon1.calcIrms(1480);  // Calculate Irms only
+     }
+ result =Irms/Count;
  return result;
  
   }
