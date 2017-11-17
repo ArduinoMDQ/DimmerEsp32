@@ -277,6 +277,33 @@ void task_ADC( void * parameter ){
     client.publish("casa/adc/potencia", (char*)Potencia.c_str());
     client.publish("casa/adc/corriente", (char*)Corriente.c_str());
 
+<<<<<<< HEAD
+=======
+    ///////////   emong
+    valor = TrueRMSMuestras(analogPinEmon);
+    
+    AmpsRMS = (valor/mVperAmpYhdc)*.9;
+    //if(AmpsRMS < minUmbral){  AmpsRMS=0;}  
+    Potencia = String(220*AmpsRMS);
+    Corriente = String(AmpsRMS,3);
+    Serial.println();
+    
+    Serial.print("Corriente Yhdc 30A/1V : "); Serial.println(AmpsRMS,3);
+    Serial.println("Potencia Yhdc 30A/1V : " + String(Potencia));
+
+    client.publish("casa/adc/potenciaTotal", (char*)Potencia.c_str());
+    client.publish("casa/adc/corrienteTotal", (char*)Corriente.c_str());
+        
+    delay(1000*segundos);
+    
+   /* double Irms = emon1.calcIrms(1480);  // Calculate Irms only
+    
+    Serial.println("**** EMONLIB ****");          // Irms
+    Serial.print("Irms*220.0 : "); Serial.print(Irms*220.0);         // Apparent power
+    Serial.print(" Irms : ");
+    Serial.println(Irms);          // Irms
+    Serial.println("**** fin EMONLIB ****");
+>>>>>>> origin/master
 
 
      float Irms30A = PromedioEmon(34);
